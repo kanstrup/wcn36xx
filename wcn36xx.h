@@ -109,6 +109,7 @@ struct wcn36xx {
 	struct wcn36xx_hal_mac_ssid ssid;
 	enum nl80211_iftype	iftype;
 	u16			aid;
+	u8			connected_bssid[6];
 	struct wcn36xx_vif	*current_vif;
 	u16			beacon_interval;
 

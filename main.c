@@ -304,6 +304,14 @@ static void wcn36xx_bss_info_changed(struct ieee80211_hw *hw,
 	wcn36xx_dbg(WCN36XX_DBG_MAC, "mac bss info changed vif %p changed 0x%08x",
 		    vif, changed);
 
+	if (changed & BSS_CHANGED_BEACON_INT) {
+		wcn36xx_dbg(WCN36XX_DBG_MAC,
+			    "mac bss changed beacon_int %d",
+			    bss_conf->beacon_int);
+
+		wcn->beacon_interval = bss_conf->beacon_int;
+	}
+
 	if (changed & BSS_CHANGED_BSSID) {
 		wcn36xx_dbg(WCN36XX_DBG_MAC, "mac bss changed_bssid %pM",
 			    bss_conf->bssid);
@@ -329,14 +337,6 @@ static void wcn36xx_bss_info_changed(struct ieee80211_hw *hw,
 		memcpy(&wcn->ssid.ssid, bss_conf->ssid, bss_conf->ssid_len);
 	}
 
-	if (changed & BSS_CHANGED_BEACON_INT) {
-		wcn36xx_dbg(WCN36XX_DBG_MAC,
-			    "mac bss changed beacon_int %d",
-			    bss_conf->beacon_int);
-
-		wcn->beacon_interval = bss_conf->beacon_int;
-	}
-
 	if (changed & BSS_CHANGED_ASSOC) {
 		wcn->is_joining = false;
 		if (bss_conf->assoc) {
@@ -348,7 +348,7 @@ static void wcn36xx_bss_info_changed(struct ieee80211_hw *hw,
 
 			wcn->aid = bss_conf->aid;
 			wcn->en_state = WCN36XX_STA_KEY;
-
+			memcpy(wcn->connected_bssid, bss_conf->bssid, 6);
 			wcn36xx_smd_set_link_st(wcn, bss_conf->bssid,
 						vif->addr,
 						WCN36XX_HAL_LINK_POSTASSOC_STATE);
@@ -368,9 +368,10 @@ static void wcn36xx_bss_info_changed(struct ieee80211_hw *hw,
 			wcn36xx_smd_delete_sta(wcn);
 			wcn36xx_smd_delete_bss(wcn);
 			wcn36xx_smd_set_link_st(wcn,
-						bss_conf->bssid,
+						wcn->connected_bssid,
 						vif->addr,
 						WCN36XX_HAL_LINK_IDLE_STATE);
+			memset(wcn->connected_bssid, 0, 6);
 		}
 	}
 	if (changed & BSS_CHANGED_AP_PROBE_RESP) {
